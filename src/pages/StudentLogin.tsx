@@ -12,7 +12,7 @@ const StudentLogin = () => {
   const [name, setName] = useState('');
   const [rollNumber, setRollNumber] = useState('');
   const [adminRoll, setAdminRoll] = useState('');
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(true);
   const navigate = useNavigate();
 
   const handleStudentLogin = () => {
