@@ -5,7 +5,7 @@ Built with **Next.js, React, and Tailwind CSS**, it provides a secure login syst
 
 ---
 
-## 🌐 Live Demo
+## 🌐 Live Website
 👉 [examplify-code.vercel.app](https://examplify-code.vercel.app/)
 
 ---
