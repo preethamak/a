@@ -3,8 +3,6 @@
 An online coding exam platform inspired by LeetCode/HackerRank.  
 Built with **Next.js, React, and Tailwind CSS**, it provides a secure login system, a timed exam interface, and a VS Code–like code editor.
 
-![Examplify Code Banner](https://your-image-link-here.com/banner.png)
-
 ---
 
 ## 🌐 Live Demo
