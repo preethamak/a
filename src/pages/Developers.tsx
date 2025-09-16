@@ -19,6 +19,30 @@ import Particles from '@/components/Particles';
 const Developers = () => {
   const navigate = useNavigate();
 
+  const getDeveloperLinkedIn = (name: string) => {
+    const links = {
+      "Preetham AK": "https://www.linkedin.com/in/preetham-a-k-18b97931b",
+      "Bhuvan Bhat": "https://www.linkedin.com/in/bhuvan-bhat-313b1b371",
+      "Madan Kumar G S": "https://www.linkedin.com/in/madan-kumar-g-s-a61892321",
+      "Harshvardhan Goriya": "https://www.linkedin.com/in/harshavardhan-goriya-9953ab317",
+      "Brundha": "https://www.linkedin.com/in/sai-brundha-karanam-bb0a22344",
+      "Parinitha": "https://www.linkedin.com/in/parinitha-n-085115332"
+    };
+    return links[name as keyof typeof links] || "#";
+  };
+
+  const getDeveloperGithub = (name: string) => {
+    const links = {
+      "Preetham AK": "https://github.com/preethamak",
+      "Bhuvan Bhat": "https://github.com/bhuvan744",
+      "Madan Kumar G S": "https://github.com/madan1432",
+      "Harshvardhan Goriya": "https://github.com/GoriyaHarshavardhan",
+      "Brundha": "https://github.com/Saibrundha3",
+      "Parinitha": "https://github.com/ParinithaN1506"
+    };
+    return links[name as keyof typeof links] || "#";
+  };
+
   const developers = [
     {
       name: "Preetham AK",
@@ -169,11 +193,21 @@ const Developers = () => {
                     </div>
                     
                     <div className="flex gap-2 pt-4">
-                      <Button size="sm" variant="outline" className="flex-1">
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        className="flex-1"
+                        onClick={() => window.open(getDeveloperGithub(dev.name), '_blank')}
+                      >
                         <Github className="h-4 w-4 mr-2" />
                         GitHub
                       </Button>
-                      <Button size="sm" variant="outline" className="flex-1">
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        className="flex-1"
+                        onClick={() => window.open(getDeveloperLinkedIn(dev.name), '_blank')}
+                      >
                         <Linkedin className="h-4 w-4 mr-2" />
                         LinkedIn
                       </Button>

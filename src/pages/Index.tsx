@@ -73,14 +73,8 @@ const Index = () => {
             <Button variant="ghost" onClick={() => navigate('/syllabus')}>
               Syllabus
             </Button>
-            <Button variant="ghost" onClick={() => navigate('/practice')}>
-              Practice
-            </Button>
             <Button variant="ghost" onClick={() => navigate('/developers')}>
               Developers
-            </Button>
-            <Button onClick={() => navigate('/login')} className="neon-button">
-              Start Exam
             </Button>
           </div>
         </div>
@@ -113,17 +107,8 @@ const Index = () => {
               className="neon-button text-lg px-8 py-4"
             >
               <Play className="h-5 w-5 mr-2" />
-              Start Examination
+              Enter CodeLab
               <ArrowRight className="h-5 w-5 ml-2" />
-            </Button>
-            
-            <Button 
-              size="lg" 
-              variant="outline" 
-              onClick={() => navigate('/practice')}
-              className="text-lg px-8 py-4 border-primary/20 hover:border-primary/40"
-            >
-              Start Practice
             </Button>
           </div>
         </div>
