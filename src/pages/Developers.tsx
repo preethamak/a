@@ -39,7 +39,7 @@ const Developers = () => {
       avatar: "B"
     },
     {
-      name: "Madhan Kumar",
+      name: "Madan Kumar G S",
       role: "Fullstack Software Engineer",
       icon: Code,
       description: "Building end-to-end solutions, bridging frontend and backend technologies to create seamless user experiences.",
@@ -217,7 +217,7 @@ const Developers = () => {
                   <div className="text-sm text-muted-foreground">Specializations</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-3xl font-bold text-primary mb-2">100%</div>
+                  <div className="text-3xl font-bold text-primary mb-2">0%</div>
                   <div className="text-sm text-muted-foreground">Dedication</div>
                 </div>
               </div>
