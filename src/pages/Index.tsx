@@ -70,6 +70,15 @@ const Index = () => {
             <Button variant="ghost" onClick={() => navigate('/features')}>
               Features
             </Button>
+            <Button variant="ghost" onClick={() => navigate('/syllabus')}>
+              Syllabus
+            </Button>
+            <Button variant="ghost" onClick={() => navigate('/practice')}>
+              Practice
+            </Button>
+            <Button variant="ghost" onClick={() => navigate('/developers')}>
+              Developers
+            </Button>
             <Button onClick={() => navigate('/login')} className="neon-button">
               Start Exam
             </Button>
@@ -111,10 +120,10 @@ const Index = () => {
             <Button 
               size="lg" 
               variant="outline" 
-              onClick={() => navigate('/features')}
+              onClick={() => navigate('/practice')}
               className="text-lg px-8 py-4 border-primary/20 hover:border-primary/40"
             >
-              Explore Features
+              Start Practice
             </Button>
           </div>
         </div>
@@ -224,6 +233,15 @@ const Index = () => {
             </Button>
             <Button variant="ghost" size="sm" onClick={() => navigate('/features')}>
               Features
+            </Button>
+            <Button variant="ghost" size="sm" onClick={() => navigate('/syllabus')}>
+              Syllabus
+            </Button>
+            <Button variant="ghost" size="sm" onClick={() => navigate('/practice')}>
+              Practice
+            </Button>
+            <Button variant="ghost" size="sm" onClick={() => navigate('/developers')}>
+              Developers
             </Button>
             <Button variant="ghost" size="sm" onClick={() => navigate('/login')}>
               Login

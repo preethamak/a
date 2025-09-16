@@ -7,6 +7,9 @@ import Index from "./pages/Index";
 import StudentLogin from "./pages/StudentLogin";
 import About from "./pages/About";
 import Features from "./pages/Features";
+import Syllabus from "./pages/Syllabus";
+import Practice from "./pages/Practice";
+import Developers from "./pages/Developers";
 import Exam from "./pages/Exam";
 import Analysis from "./pages/Analysis";
 import Leaderboard from "./pages/Leaderboard";
@@ -25,6 +28,9 @@ const App = () => (
           <Route path="/login" element={<StudentLogin />} />
           <Route path="/about" element={<About />} />
           <Route path="/features" element={<Features />} />
+          <Route path="/syllabus" element={<Syllabus />} />
+          <Route path="/practice" element={<Practice />} />
+          <Route path="/developers" element={<Developers />} />
           <Route path="/exam" element={<Exam />} />
           <Route path="/analysis" element={<Analysis />} />
           <Route path="/leaderboard" element={<Leaderboard />} />

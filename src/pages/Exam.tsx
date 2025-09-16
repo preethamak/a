@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
 import { toast } from '@/components/ui/use-toast';
 import { 
   Timer, 
@@ -14,7 +15,11 @@ import {
   AlertTriangle, 
   Lock,
   CheckCircle,
-  FileText
+  FileText,
+  FolderPlus,
+  Terminal,
+  X,
+  Zap
 } from 'lucide-react';
 
 const Exam = () => {
@@ -26,6 +31,12 @@ const Exam = () => {
   const [isLocked, setIsLocked] = useState(false);
   const [studentName] = useState(localStorage.getItem('studentName') || '');
   const [studentRoll] = useState(localStorage.getItem('studentRoll') || '');
+  const [files, setFiles] = useState([
+    { name: 'main.py', content: '# Write your Python code here\nprint("Hello World")', active: true },
+  ]);
+  const [newFileName, setNewFileName] = useState('');
+  const [terminalOutput, setTerminalOutput] = useState('CodeLab Exam Terminal\n$ Ready for execution...\n');
+  const [terminalInput, setTerminalInput] = useState('');
 
   const languages = [
     { value: 'python', label: 'Python', template: '# Write your Python code here\nprint("Hello World")' },
@@ -131,17 +142,116 @@ const Exam = () => {
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
+  const activeFile = files.find(f => f.active) || files[0];
+
   const handleLanguageChange = (value: string) => {
     setSelectedLanguage(value);
     const template = languages.find(lang => lang.value === value)?.template || '';
-    setCode(template);
+    const extension = languages.find(lang => lang.value === value)?.label.toLowerCase() || 'txt';
+    
+    // Update active file with new template
+    setFiles(prev => prev.map(file => 
+      file.active ? { ...file, content: template, name: `main.${getFileExtension(value)}` } : file
+    ));
+  };
+
+  const getFileExtension = (language: string) => {
+    const extensions: { [key: string]: string } = {
+      python: 'py',
+      cpp: 'cpp',
+      c: 'c',
+      java: 'java',
+      javascript: 'js',
+      html: 'html'
+    };
+    return extensions[language] || 'txt';
+  };
+
+  const handleCreateFile = () => {
+    if (!newFileName.trim()) return;
+    
+    const newFile = {
+      name: newFileName,
+      content: '',
+      active: false
+    };
+    
+    setFiles(prev => [...prev, newFile]);
+    setNewFileName('');
+    
+    toast({
+      title: "File Created",
+      description: `${newFileName} has been created successfully.`,
+    });
+  };
+
+  const handleFileSwitch = (fileName: string) => {
+    setFiles(prev => prev.map(file => ({
+      ...file,
+      active: file.name === fileName
+    })));
+  };
+
+  const handleDeleteFile = (fileName: string) => {
+    if (files.length === 1) {
+      toast({
+        title: "Cannot Delete",
+        description: "You must have at least one file open.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    setFiles(prev => {
+      const updatedFiles = prev.filter(file => file.name !== fileName);
+      if (prev.find(f => f.name === fileName)?.active && updatedFiles.length > 0) {
+        updatedFiles[0].active = true;
+      }
+      return updatedFiles;
+    });
+  };
+
+  const updateActiveFileContent = (content: string) => {
+    setFiles(prev => prev.map(file => 
+      file.active ? { ...file, content } : file
+    ));
+  };
+
+  const handleTerminalCommand = () => {
+    if (!terminalInput.trim()) return;
+    
+    setTerminalOutput(prev => prev + `$ ${terminalInput}\n`);
+    
+    // Simulate command execution
+    setTimeout(() => {
+      let output = '';
+      if (terminalInput.includes('ls')) {
+        output = files.map(f => f.name).join('  ') + '\n';
+      } else if (terminalInput.includes('clear')) {
+        setTerminalOutput('Terminal cleared.\n');
+        setTerminalInput('');
+        return;
+      } else if (terminalInput.includes('run') || terminalInput.includes('execute')) {
+        output = `Executing ${activeFile.name}...\nHello World\nExecution completed.\n`;
+      } else {
+        output = `Command '${terminalInput}' executed.\n`;
+      }
+      setTerminalOutput(prev => prev + output);
+    }, 500);
+    
+    setTerminalInput('');
   };
 
   const handleRunCode = () => {
-    toast({
-      title: "Code Executed",
-      description: "Your code has been compiled and executed successfully.",
-    });
+    setTerminalOutput(prev => prev + `\n$ Running ${activeFile.name}...\n`);
+    
+    setTimeout(() => {
+      setTerminalOutput(prev => prev + `Hello World\nExecution completed successfully.\n`);
+      toast({
+        title: "Code Executed",
+        description: "Your code has been compiled and executed successfully.",
+      });
+    }, 1000);
   };
 
   const handleSaveProgress = () => {
@@ -305,7 +415,7 @@ const Exam = () => {
                   </SelectContent>
                 </Select>
                 
-                <Button onClick={handleRunCode} variant="outline" className="ml-auto">
+                <Button onClick={handleRunCode} className="neon-button ml-auto">
                   <Play className="h-4 w-4 mr-2" />
                   Run Code
                 </Button>
@@ -313,35 +423,115 @@ const Exam = () => {
             </CardContent>
           </Card>
 
-          {/* Code Editor */}
-          <Card className="glass-card flex-1">
-            <CardContent className="p-0 h-full">
-              <Textarea
-                value={code}
-                onChange={(e) => setCode(e.target.value)}
-                className="h-full min-h-[400px] resize-none font-mono text-sm code-editor border-0 rounded-t-none"
-                placeholder="Write your code here..."
-              />
-            </CardContent>
-          </Card>
+          <div className="grid lg:grid-cols-3 gap-4 h-[calc(100vh-300px)]">
+            {/* File Manager & Editor */}
+            <div className="lg:col-span-2 space-y-4">
+              {/* File Tabs */}
+              <Card className="glass-card">
+                <CardContent className="py-3">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {files.map((file) => (
+                      <div key={file.name} className="flex items-center">
+                        <Button
+                          variant={file.active ? "default" : "ghost"}
+                          size="sm"
+                          onClick={() => handleFileSwitch(file.name)}
+                          className="rounded-r-none"
+                        >
+                          {file.name}
+                        </Button>
+                        {files.length > 1 && (
+                          <Button
+                            variant={file.active ? "default" : "ghost"}
+                            size="sm"
+                            onClick={() => handleDeleteFile(file.name)}
+                            className="rounded-l-none border-l-0 px-2"
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                        )}
+                      </div>
+                    ))}
+                    
+                    <div className="flex items-center gap-2 ml-4">
+                      <Input
+                        placeholder="filename.ext"
+                        value={newFileName}
+                        onChange={(e) => setNewFileName(e.target.value)}
+                        className="w-32 h-8"
+                        onKeyPress={(e) => e.key === 'Enter' && handleCreateFile()}
+                      />
+                      <Button size="sm" onClick={handleCreateFile} variant="outline">
+                        <FolderPlus className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
 
-          {/* Output Panel */}
-          <Card className="glass-card">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm">Output</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="bg-background/50 p-3 rounded font-mono text-sm min-h-[80px]">
-                <div className="flex items-center gap-2 text-green-500">
-                  <CheckCircle className="h-4 w-4" />
-                  Compilation successful
-                </div>
-                <div className="mt-2 text-muted-foreground">
-                  Output will appear here when you run your code...
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+              {/* Code Editor */}
+              <Card className="glass-card flex-1">
+                <CardContent className="p-0 h-full">
+                  <Textarea
+                    value={activeFile.content}
+                    onChange={(e) => updateActiveFileContent(e.target.value)}
+                    className="h-full min-h-[350px] resize-none font-mono text-sm code-editor border-0 rounded-t-none"
+                    placeholder="Write your code here..."
+                  />
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Terminal & Output */}
+            <div className="space-y-4">
+              {/* Output Panel */}
+              <Card className="glass-card">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    <CheckCircle className="h-4 w-4" />
+                    Output
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="bg-background/50 p-3 rounded font-mono text-sm min-h-[100px] max-h-[120px] overflow-y-auto">
+                    <div className="text-muted-foreground">
+                      Click "Run Code" to see output here...
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Terminal */}
+              <Card className="glass-card flex-1">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    <Terminal className="h-4 w-4" />
+                    Terminal
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="bg-background/50 p-3 rounded font-mono text-sm min-h-[150px] max-h-[200px] overflow-y-auto">
+                    <pre className="whitespace-pre-wrap text-xs text-muted-foreground">
+                      {terminalOutput}
+                    </pre>
+                  </div>
+                  
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="Enter command..."
+                      value={terminalInput}
+                      onChange={(e) => setTerminalInput(e.target.value)}
+                      onKeyPress={(e) => e.key === 'Enter' && handleTerminalCommand()}
+                      className="font-mono text-sm"
+                    />
+                    <Button size="sm" onClick={handleTerminalCommand}>
+                      <Zap className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
         </div>
       </div>
 
