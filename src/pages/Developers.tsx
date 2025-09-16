@@ -217,7 +217,7 @@ const Developers = () => {
                   <div className="text-sm text-muted-foreground">Specializations</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-3xl font-bold text-primary mb-2">0%</div>
+                  <div className="text-3xl font-bold text-primary mb-2">100%</div>
                   <div className="text-sm text-muted-foreground">Dedication</div>
                 </div>
               </div>
