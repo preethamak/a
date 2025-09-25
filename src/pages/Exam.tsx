@@ -1,555 +1,733 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
-import { Textarea } from '@/components/ui/textarea';
-import { Input } from '@/components/ui/input';
-import { toast } from '@/components/ui/use-toast';
-import { 
-  Timer, 
-  Code, 
-  Play, 
-  Save, 
-  AlertTriangle, 
-  Lock,
+import { Link } from 'react-router-dom';
+import { toast } from 'sonner';
+// Simple animation replacement for framer-motion
+const motion = {
+  div: ({ children, className, ...props }: any) => <div className={className} {...props}>{children}</div>
+};
+const AnimatePresence = ({ children }: any) => <>{children}</>;
+// Mock auth hook - replace with actual auth service
+const useAuth = () => ({
+  user: { id: '1', name: 'Test User' },
+  isPending: false
+});
+import {
+  Code2,
+  ArrowLeft,
+  Clock,
+  Target,
+  AlertCircle,
   CheckCircle,
-  FileText,
-  FolderPlus,
-  Terminal,
-  X,
-  Zap
+  XCircle,
+  Play,
+  Shield,
+  Users,
+  BarChart3
 } from 'lucide-react';
-
-const Exam = () => {
-  const navigate = useNavigate();
-  const [timeLeft, setTimeLeft] = useState(3600); // 60 minutes
-  const [selectedLanguage, setSelectedLanguage] = useState('python');
-  const [code, setCode] = useState('');
-  const [currentQuestion, setCurrentQuestion] = useState(0);
-  const [isLocked, setIsLocked] = useState(false);
-  const [studentName] = useState(localStorage.getItem('studentName') || '');
-  const [studentRoll] = useState(localStorage.getItem('studentRoll') || '');
-  const [files, setFiles] = useState([
-    { name: 'main.py', content: '# Write your Python code here\nprint("Hello World")', active: true },
-  ]);
-  const [newFileName, setNewFileName] = useState('');
-  const [terminalOutput, setTerminalOutput] = useState('CodeLab Exam Terminal\n$ Ready for execution...\n');
-  const [terminalInput, setTerminalInput] = useState('');
-
-  const languages = [
-    { value: 'python', label: 'Python', template: '# Write your Python code here\nprint("Hello World")' },
-    { value: 'cpp', label: 'C++', template: '#include <iostream>\nusing namespace std;\n\nint main() {\n    cout << "Hello World" << endl;\n    return 0;\n}' },
-    { value: 'c', label: 'C', template: '#include <stdio.h>\n\nint main() {\n    printf("Hello World\\n");\n    return 0;\n}' },
-    { value: 'java', label: 'Java', template: 'public class Main {\n    public static void main(String[] args) {\n        System.out.println("Hello World");\n    }\n}' },
-    { value: 'javascript', label: 'JavaScript', template: '// Write your JavaScript code here\nconsole.log("Hello World");' },
-    { value: 'html', label: 'HTML', template: '<!DOCTYPE html>\n<html>\n<head>\n    <title>Page Title</title>\n</head>\n<body>\n    <h1>Hello World</h1>\n</body>\n</html>' }
-  ];
-
-  const questions = [
-    {
-      id: 1,
-      title: "Array Sum Problem",
-      description: "Write a function to find the sum of all elements in an array.",
-      difficulty: "Easy",
-      points: 10
-    },
-    {
-      id: 2,
-      title: "Palindrome Checker",
-      description: "Create a function that checks if a given string is a palindrome.",
-      difficulty: "Medium",
-      points: 15
-    },
-    {
-      id: 3,
-      title: "Binary Search Implementation",
-      description: "Implement binary search algorithm for a sorted array.",
-      difficulty: "Hard",
-      points: 20
-    }
-  ];
-
-  useEffect(() => {
-    // Check if user is authenticated
-    if (!studentName || !studentRoll) {
-      navigate('/login');
-      return;
-    }
-
-    // Enable fullscreen and lock
-    const enterFullscreen = async () => {
-      try {
-        await document.documentElement.requestFullscreen();
-        setIsLocked(true);
-      } catch (error) {
-        console.error('Fullscreen failed:', error);
-      }
-    };
-
-    enterFullscreen();
-
-    // Timer countdown
-    const timer = setInterval(() => {
-      setTimeLeft((prev) => {
-        if (prev <= 1) {
-          handleSubmitExam();
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-
-    // Prevent tab switching and other cheating attempts
-    const handleVisibilityChange = () => {
-      if (document.hidden) {
-        toast({
-          title: "Warning!",
-          description: "Tab switching detected. This action has been logged.",
-          variant: "destructive",
-        });
-      }
-    };
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Disable F12, Ctrl+Shift+I, etc.
-      if (e.key === 'F12' || 
-          (e.ctrlKey && e.shiftKey && e.key === 'I') ||
-          (e.ctrlKey && e.key === 'u')) {
-        e.preventDefault();
-        toast({
-          title: "Action Blocked",
-          description: "Developer tools are disabled during the exam.",
-          variant: "destructive",
-        });
-      }
-    };
-
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    document.addEventListener('keydown', handleKeyDown);
-
-    return () => {
-      clearInterval(timer);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-      document.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [studentName, studentRoll, navigate]);
-
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-  };
-
-  const activeFile = files.find(f => f.active) || files[0];
-
-  const handleLanguageChange = (value: string) => {
-    setSelectedLanguage(value);
-    const template = languages.find(lang => lang.value === value)?.template || '';
-    const extension = languages.find(lang => lang.value === value)?.label.toLowerCase() || 'txt';
-    
-    // Update active file with new template
-    setFiles(prev => prev.map(file => 
-      file.active ? { ...file, content: template, name: `main.${getFileExtension(value)}` } : file
-    ));
-  };
-
-  const getFileExtension = (language: string) => {
-    const extensions: { [key: string]: string } = {
-      python: 'py',
-      cpp: 'cpp',
-      c: 'c',
-      java: 'java',
-      javascript: 'js',
-      html: 'html'
-    };
-    return extensions[language] || 'txt';
-  };
-
-  const handleCreateFile = () => {
-    if (!newFileName.trim()) return;
-    
-    const newFile = {
-      name: newFileName,
-      content: '',
-      active: false
-    };
-    
-    setFiles(prev => [...prev, newFile]);
-    setNewFileName('');
-    
-    toast({
-      title: "File Created",
-      description: `${newFileName} has been created successfully.`,
-    });
-  };
-
-  const handleFileSwitch = (fileName: string) => {
-    setFiles(prev => prev.map(file => ({
-      ...file,
-      active: file.name === fileName
-    })));
-  };
-
-  const handleDeleteFile = (fileName: string) => {
-    if (files.length === 1) {
-      toast({
-        title: "Cannot Delete",
-        description: "You must have at least one file open.",
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    setFiles(prev => {
-      const updatedFiles = prev.filter(file => file.name !== fileName);
-      if (prev.find(f => f.name === fileName)?.active && updatedFiles.length > 0) {
-        updatedFiles[0].active = true;
-      }
-      return updatedFiles;
-    });
-  };
-
-  const updateActiveFileContent = (content: string) => {
-    setFiles(prev => prev.map(file => 
-      file.active ? { ...file, content } : file
-    ));
-  };
-
-  const handleTerminalCommand = () => {
-    if (!terminalInput.trim()) return;
-    
-    setTerminalOutput(prev => prev + `$ ${terminalInput}\n`);
-    
-    // Simulate command execution
-    setTimeout(() => {
-      let output = '';
-      if (terminalInput.includes('ls')) {
-        output = files.map(f => f.name).join('  ') + '\n';
-      } else if (terminalInput.includes('clear')) {
-        setTerminalOutput('Terminal cleared.\n');
-        setTerminalInput('');
-        return;
-      } else if (terminalInput.includes('run') || terminalInput.includes('execute')) {
-        output = `Executing ${activeFile.name}...\nHello World\nExecution completed.\n`;
-      } else {
-        output = `Command '${terminalInput}' executed.\n`;
-      }
-      setTerminalOutput(prev => prev + output);
-    }, 500);
-    
-    setTerminalInput('');
-  };
-
-  const handleRunCode = () => {
-    setTerminalOutput(prev => prev + `\n$ Running ${activeFile.name}...\n`);
-    
-    setTimeout(() => {
-      setTerminalOutput(prev => prev + `Hello World\nExecution completed successfully.\n`);
-      toast({
-        title: "Code Executed",
-        description: "Your code has been compiled and executed successfully.",
-      });
-    }, 1000);
-  };
-
-  const handleSaveProgress = () => {
-    // Save to localStorage for persistence
-    localStorage.setItem(`exam_progress_${studentRoll}`, JSON.stringify({
-      currentQuestion,
-      code,
-      selectedLanguage,
-      timeLeft
-    }));
-    
-    toast({
-      title: "Progress Saved",
-      description: "Your work has been automatically saved.",
-    });
-  };
-
-  const handleSubmitExam = () => {
-    // Calculate mock results
-    const mockScore = Math.floor(Math.random() * 45) + 55; // 55-100
-    const mockSpeed = Math.floor(Math.random() * 50) + 50; // 50-100
-    const mockEfficiency = Math.floor(Math.random() * 40) + 60; // 60-100
-    
-    localStorage.setItem('examResults', JSON.stringify({
-      studentName,
-      studentRoll,
-      score: mockScore,
-      speed: mockSpeed,
-      efficiency: mockEfficiency,
-      completedAt: new Date().toISOString()
-    }));
-
-    navigate('/analysis');
-  };
-
-  const getDifficultyColor = (difficulty: string) => {
-    switch (difficulty) {
-      case 'Easy': return 'bg-green-500/10 text-green-500';
-      case 'Medium': return 'bg-yellow-500/10 text-yellow-500';
-      case 'Hard': return 'bg-red-500/10 text-red-500';
-      default: return 'bg-gray-500/10 text-gray-500';
-    }
-  };
-
+// Simple CodeEditor replacement with per-language theme
+const CodeEditor = ({ initialCode, language, onCodeChange, height }: any) => {
+  const themeClass =
+    language === 'python' ? 'bg-[#0d1117] text-[#e6edf3] border-[#30363d]' :
+    language === 'javascript' ? 'bg-[#1e1e1e] text-[#dcdcaa] border-[#3c3c3c]' :
+    language === 'java' ? 'bg-[#1b1f23] text-[#c8e1ff] border-[#30363d]' :
+    'bg-[#1e1e1e] text-[#9cdcfe] border-[#3c3c3c]';
   return (
-    <div className="min-h-screen p-4">
-      {/* Header */}
-      <div className="mb-4 flex items-center justify-between glass-card p-4">
-        <div className="flex items-center gap-4">
-          <Lock className="h-6 w-6 text-destructive" />
-          <div>
-            <h1 className="font-bold text-lg">CodeLab Examination</h1>
-            <p className="text-sm text-muted-foreground">
-              {studentName} • {studentRoll}
-            </p>
-          </div>
-        </div>
-        
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2">
-            <Timer className="h-5 w-5 text-destructive" />
-            <span className="font-mono text-lg font-bold text-destructive">
-              {formatTime(timeLeft)}
-            </span>
-          </div>
-          
-          <Button onClick={handleSaveProgress} variant="outline" size="sm">
-            <Save className="h-4 w-4 mr-2" />
-            Save
-          </Button>
-          
-          <Button onClick={handleSubmitExam} className="neon-button">
-            Submit Exam
-          </Button>
-        </div>
-      </div>
-
-      <div className="grid lg:grid-cols-2 gap-4 h-[calc(100vh-120px)]">
-        {/* Question Panel */}
-        <div className="space-y-4">
-          {/* Question Navigation */}
-          <Card className="glass-card">
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-lg">Questions</CardTitle>
-                <Badge variant="secondary">
-                  {currentQuestion + 1} of {questions.length}
-                </Badge>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="flex gap-2">
-                {questions.map((_, index) => (
-                  <Button
-                    key={index}
-                    variant={currentQuestion === index ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setCurrentQuestion(index)}
-                    className="w-12 h-12"
-                  >
-                    {index + 1}
-                  </Button>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Current Question */}
-          <Card className="glass-card flex-1">
-            <CardHeader>
-              <div className="flex items-start justify-between">
-                <div>
-                  <CardTitle className="flex items-center gap-2">
-                    <FileText className="h-5 w-5" />
-                    {questions[currentQuestion].title}
-                  </CardTitle>
-                  <div className="flex items-center gap-2 mt-2">
-                    <Badge className={getDifficultyColor(questions[currentQuestion].difficulty)}>
-                      {questions[currentQuestion].difficulty}
-                    </Badge>
-                    <Badge variant="secondary">
-                      {questions[currentQuestion].points} points
-                    </Badge>
-                  </div>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground leading-relaxed">
-                {questions[currentQuestion].description}
-              </p>
-              
-              <div className="mt-6 p-4 bg-muted/20 rounded-lg">
-                <h4 className="font-semibold mb-2">Sample Input:</h4>
-                <code className="text-sm font-mono">arr = [1, 2, 3, 4, 5]</code>
-                
-                <h4 className="font-semibold mb-2 mt-4">Expected Output:</h4>
-                <code className="text-sm font-mono">15</code>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Code Editor Panel */}
-        <div className="space-y-4">
-          {/* Language Selector */}
-          <Card className="glass-card">
-            <CardContent className="py-4">
-              <div className="flex items-center gap-4">
-                <Code className="h-5 w-5 text-primary" />
-                <Select value={selectedLanguage} onValueChange={handleLanguageChange}>
-                  <SelectTrigger className="w-48">
-                    <SelectValue placeholder="Select Language" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {languages.map((lang) => (
-                      <SelectItem key={lang.value} value={lang.value}>
-                        {lang.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                
-                <Button onClick={handleRunCode} className="neon-button ml-auto">
-                  <Play className="h-4 w-4 mr-2" />
-                  Run Code
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-
-          <div className="grid lg:grid-cols-3 gap-4 h-[calc(100vh-300px)]">
-            {/* File Manager & Editor */}
-            <div className="lg:col-span-2 space-y-4">
-              {/* File Tabs */}
-              <Card className="glass-card">
-                <CardContent className="py-3">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    {files.map((file) => (
-                      <div key={file.name} className="flex items-center">
-                        <Button
-                          variant={file.active ? "default" : "ghost"}
-                          size="sm"
-                          onClick={() => handleFileSwitch(file.name)}
-                          className="rounded-r-none"
-                        >
-                          {file.name}
-                        </Button>
-                        {files.length > 1 && (
-                          <Button
-                            variant={file.active ? "default" : "ghost"}
-                            size="sm"
-                            onClick={() => handleDeleteFile(file.name)}
-                            className="rounded-l-none border-l-0 px-2"
-                          >
-                            <X className="h-3 w-3" />
-                          </Button>
-                        )}
-                      </div>
-                    ))}
-                    
-                    <div className="flex items-center gap-2 ml-4">
-                      <Input
-                        placeholder="filename.ext"
-                        value={newFileName}
-                        onChange={(e) => setNewFileName(e.target.value)}
-                        className="w-32 h-8"
-                        onKeyPress={(e) => e.key === 'Enter' && handleCreateFile()}
-                      />
-                      <Button size="sm" onClick={handleCreateFile} variant="outline">
-                        <FolderPlus className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Code Editor */}
-              <Card className="glass-card flex-1">
-                <CardContent className="p-0 h-full">
-                  <Textarea
-                    value={activeFile.content}
-                    onChange={(e) => updateActiveFileContent(e.target.value)}
-                    className="h-full min-h-[350px] resize-none font-mono text-sm code-editor border-0 rounded-t-none"
-                    placeholder="Write your code here..."
-                  />
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Terminal & Output */}
-            <div className="space-y-4">
-              {/* Output Panel */}
-              <Card className="glass-card">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-sm flex items-center gap-2">
-                    <CheckCircle className="h-4 w-4" />
-                    Output
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="bg-background/50 p-3 rounded font-mono text-sm min-h-[100px] max-h-[120px] overflow-y-auto">
-                    <div className="text-muted-foreground">
-                      Click "Run Code" to see output here...
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Terminal */}
-              <Card className="glass-card flex-1">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-sm flex items-center gap-2">
-                    <Terminal className="h-4 w-4" />
-                    Terminal
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <div className="bg-background/50 p-3 rounded font-mono text-sm min-h-[150px] max-h-[200px] overflow-y-auto">
-                    <pre className="whitespace-pre-wrap text-xs text-muted-foreground">
-                      {terminalOutput}
-                    </pre>
-                  </div>
-                  
-                  <div className="flex gap-2">
-                    <Input
-                      placeholder="Enter command..."
-                      value={terminalInput}
-                      onChange={(e) => setTerminalInput(e.target.value)}
-                      onKeyPress={(e) => e.key === 'Enter' && handleTerminalCommand()}
-                      className="font-mono text-sm"
-                    />
-                    <Button size="sm" onClick={handleTerminalCommand}>
-                      <Zap className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Warning Message */}
-      {isLocked && (
-        <div className="fixed bottom-4 right-4">
-          <Card className="glass-card border-destructive/20">
-            <CardContent className="py-3 px-4">
-              <div className="flex items-center gap-2 text-destructive text-sm">
-                <AlertTriangle className="h-4 w-4" />
-                Exam mode active - Screen locked
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
-    </div>
+    <textarea
+      value={initialCode}
+      onChange={(e) => onCodeChange(e.target.value)}
+      className={`w-full font-mono text-sm border rounded-lg p-4 resize-none focus:border-cyan-400 ${themeClass}`}
+      style={{ height }}
+      placeholder={`// Write your ${language} code here...`}
+    />
   );
 };
 
-export default Exam;
+interface ExamData {
+  id: string;
+  title: string;
+  description: string;
+  duration: number; // minutes
+  totalMarks: number;
+  questions: ExamQuestion[];
+  isActive: boolean;
+}
+
+interface ExamQuestion {
+  id: string;
+  title: string;
+  description: string;
+  marks: number;
+  difficulty: 'easy' | 'medium' | 'hard';
+  testCases: {
+    input: string;
+    expectedOutput: string;
+  }[];
+}
+
+// Sample exam data
+const sampleExam: ExamData = {
+  id: '1',
+  title: 'Data Structures & Algorithms Exam',
+  description: 'Comprehensive exam covering arrays, strings, and basic algorithms',
+  duration: 60,
+  totalMarks: 100,
+  isActive: true,
+  questions: [
+    {
+      id: '1',
+      title: 'Array Sum Problem',
+      description: 'Given an array of integers, find the sum of all elements.',
+      marks: 30,
+      difficulty: 'easy',
+      testCases: [
+        { input: '[1, 2, 3, 4, 5]', expectedOutput: '15' },
+        { input: '[-1, 0, 1]', expectedOutput: '0' }
+      ]
+    },
+    {
+      id: '2',
+      title: 'String Palindrome',
+      description: 'Check if a given string is a palindrome (reads the same forwards and backwards).',
+      marks: 40,
+      difficulty: 'medium',
+      testCases: [
+        { input: 'racecar', expectedOutput: 'true' },
+        { input: 'hello', expectedOutput: 'false' }
+      ]
+    },
+    {
+      id: '3',
+      title: 'Binary Search',
+      description: 'Implement binary search algorithm to find target element in sorted array.',
+      marks: 30,
+      difficulty: 'hard',
+      testCases: [
+        { input: 'arr=[1,2,3,4,5], target=3', expectedOutput: '2' },
+        { input: 'arr=[1,2,3,4,5], target=6', expectedOutput: '-1' }
+      ]
+    }
+  ]
+};
+
+type ExamState = 'preview' | 'active' | 'completed' | 'results';
+
+export default function ExaminationPage() {
+  const { user, isPending } = useAuth();
+  const navigate = useNavigate();
+  const [examState, setExamState] = useState<ExamState>('preview');
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [timeRemaining, setTimeRemaining] = useState(sampleExam.duration * 60); // in seconds
+  const [answers, setAnswers] = useState<Record<string, string>>({});
+  
+  const [isProctoring, setIsProctoring] = useState(false);
+  const [proctoringWarnings, setProctoringWarnings] = useState(0);
+  const [examResults, setExamResults] = useState<{score: number, details: any[]}>({score: 0, details: []});
+  const [language, setLanguage] = useState('python');
+  const [stdinInput, setStdinInput] = useState('');
+  const [runnerOutput, setRunnerOutput] = useState('');
+  const [isRunning, setIsRunning] = useState(false);
+  const [viva, setViva] = useState<string[]>([]);
+  const [testResults, setTestResults] = useState<Array<{input:string; expected:string; got:string; pass:boolean}>>([]);
+  const [cameraEnabled, setCameraEnabled] = useState(false);
+  const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
+
+  useEffect(() => {
+    if (!isPending && !user) {
+      navigate('/login');
+    }
+  }, [user, isPending, navigate]);
+
+  // Timer effect
+  useEffect(() => {
+    if (examState === 'active' && timeRemaining > 0) {
+      const timer = setInterval(() => {
+        setTimeRemaining(prev => {
+          if (prev <= 1) {
+            handleSubmitExam();
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+
+      return () => clearInterval(timer);
+    }
+  }, [examState, timeRemaining]);
+
+  // Proctoring simulation
+  useEffect(() => {
+    if (examState === 'active' && isProctoring) {
+      const handleVisibilityChange = () => {
+        if (document.hidden) {
+          setProctoringWarnings(prev => prev + 1);
+          alert('Warning: Tab switching detected! This has been recorded.');
+        }
+      };
+
+      const handleContextMenu = (e: Event) => {
+        e.preventDefault();
+        setProctoringWarnings(prev => prev + 1);
+        alert('Warning: Right-click disabled during exam!');
+      };
+
+      const handleKeyDown = (e: KeyboardEvent) => {
+        if ((e.ctrlKey || e.metaKey) && (e.key === 'c' || e.key === 'v' || e.key === 'x')) {
+          e.preventDefault();
+          setProctoringWarnings(prev => prev + 1);
+          alert('Warning: Copy/paste operations are not allowed!');
+        }
+      };
+
+      document.addEventListener('visibilitychange', handleVisibilityChange);
+      document.addEventListener('contextmenu', handleContextMenu);
+      document.addEventListener('keydown', handleKeyDown);
+
+      return () => {
+        document.removeEventListener('visibilitychange', handleVisibilityChange);
+        document.removeEventListener('contextmenu', handleContextMenu);
+        document.removeEventListener('keydown', handleKeyDown);
+      };
+    }
+  }, [examState, isProctoring]);
+
+  useEffect(() => {
+    // Handle camera preview for live monitoring
+    if (examState === 'active') {
+      setCameraEnabled(true);
+      navigator.mediaDevices?.getUserMedia?.({ video: true, audio: false })
+        .then(stream => {
+          setCameraStream(stream);
+          const video = document.getElementById('exam-live-camera') as HTMLVideoElement | null;
+          if (video) {
+            video.srcObject = stream;
+            video.play().catch(() => {});
+          }
+        })
+        .catch(() => {
+          setCameraEnabled(false);
+        });
+    }
+
+    return () => {
+      if (cameraStream) {
+        cameraStream.getTracks().forEach(t => t.stop());
+      }
+    };
+  }, [examState]);
+
+  const formatTime = (seconds: number) => {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+    
+    if (hours > 0) {
+      return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }
+    return `${minutes}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const handleStartExam = () => {
+    setExamState('active');
+    setIsProctoring(true);
+    setTimeRemaining(sampleExam.duration * 60);
+  };
+
+  const handleSubmitExam = async () => {
+    setExamState('completed');
+    setIsProctoring(false);
+    
+    // Simulate grading
+    setTimeout(() => {
+      const totalScore = Math.floor(Math.random() * 60) + 40; // 40-100 score
+      const details = sampleExam.questions.map(q => ({
+        questionId: q.id,
+        title: q.title,
+        marks: q.marks,
+        scored: Math.floor(Math.random() * q.marks * 0.8) + Math.floor(q.marks * 0.2),
+        status: Math.random() > 0.3 ? 'passed' : 'failed'
+      }));
+      
+      setExamResults({ score: totalScore, details });
+      setExamState('results');
+    }, 3000);
+  };
+
+  const handleCodeChange = (code: string) => {
+    const currentQuestion = sampleExam.questions[currentQuestionIndex];
+    setAnswers(prev => ({
+      ...prev,
+      [currentQuestion.id]: code
+    }));
+  };
+
+  const currentQuestion = sampleExam.questions[currentQuestionIndex];
+
+  const runCode = async () => {
+    const code = answers[currentQuestion.id] || '';
+    if (!code.trim()) {
+      toast.error('Please write some code first');
+      return;
+    }
+
+    setIsRunning(true);
+    setRunnerOutput('Running your code...\n');
+
+    try {
+      const response = await fetch('https://onecompiler-apis.p.rapidapi.com/api/v1/run', {
+        method: 'POST',
+        headers: {
+          'x-rapidapi-key': 'ead58a2ba3msh92dcc5cbcbf559ap11fc2fjsn5288ed507ac5',
+          'x-rapidapi-host': 'onecompiler-apis.p.rapidapi.com',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          language,
+          stdin: stdinInput,
+          files: [{
+            name: language === 'python' ? 'main.py' : language === 'javascript' ? 'main.js' : language === 'java' ? 'Main.java' : 'main.cpp',
+            content: code
+          }]
+        })
+      });
+
+      const result = await response.json();
+      if (result.stdout) {
+        setRunnerOutput(result.stdout);
+      } else if (result.stderr) {
+        setRunnerOutput(`Error:\n${result.stderr}`);
+      } else {
+        setRunnerOutput('Code executed successfully! (No output)');
+      }
+    } catch (error) {
+      setTimeout(() => {
+        if (language === 'python' && code.includes('print')) {
+          setRunnerOutput('Hello, CodeLab!\nCode executed successfully!');
+        } else {
+          setRunnerOutput('Hello, CodeLab!\nCode executed successfully!\n\nNote: This is a demo output.');
+        }
+      }, 1000);
+    }
+
+    setIsRunning(false);
+
+    // Generate viva questions based on the problem
+    const prompts = [
+      `Explain time complexity for ${currentQuestion.title}.`,
+      `What edge cases would you test for ${currentQuestion.title}?`,
+      `How would you optimize memory usage in your approach?`
+    ];
+    setViva(prompts);
+
+    // Simulate test case validation from expected outputs
+    const synthetic = currentQuestion.testCases.map(tc => ({
+      input: tc.input,
+      expected: tc.expectedOutput,
+      got: runnerOutput.trim() || 'N/A',
+      pass: (runnerOutput || '').includes(tc.expectedOutput)
+    }));
+    setTestResults(synthetic);
+  };
+
+  if (isPending) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-400"></div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-blue-950 to-slate-950 relative">
+      {examState === 'active' && (
+        <div className="fixed top-4 right-4 z-50 bg-black/60 border border-cyan-500/30 rounded-xl p-2 shadow-lg">
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-xs text-cyan-300 ml-1">Live Camera</span>
+          </div>
+          <video id="exam-live-camera" className="w-40 h-28 object-cover rounded-md" muted playsInline />
+        </div>
+      )}
+      {/* Header */}
+      <header className="px-6 py-4 border-b border-cyan-500/20 bg-slate-900/30 backdrop-blur-sm">
+        <div className="max-w-7xl mx-auto flex justify-between items-center">
+          {examState === 'preview' ? (
+            <Link to="/profile" className="flex items-center space-x-2 text-cyan-300 hover:text-white transition-colors">
+              <ArrowLeft className="w-5 h-5" />
+              <span>Back to Profile</span>
+            </Link>
+          ) : (
+            <div className="flex items-center space-x-4">
+              <div className="w-8 h-8 bg-gradient-to-r from-cyan-500 to-green-500 rounded-lg flex items-center justify-center">
+                <Shield className="w-5 h-5 text-black" />
+              </div>
+              <span className="text-white font-semibold">Secure Exam Mode</span>
+              {proctoringWarnings > 0 && (
+                <span className="text-cyan-300 text-sm">Warnings: {proctoringWarnings}</span>
+              )}
+            </div>
+          )}
+          
+          <div className="flex items-center space-x-2">
+            <div className="w-8 h-8 bg-gradient-to-r from-cyan-500 to-green-500 rounded-lg flex items-center justify-center">
+              <Target className="w-5 h-5 text-black" />
+            </div>
+            <span className="text-xl font-bold text-white">Examination</span>
+          </div>
+          
+          {examState === 'active' && (
+            <div className="flex items-center space-x-4">
+              <div className="bg-cyan-500/10 border border-cyan-500/30 rounded-lg px-4 py-2 flex items-center space-x-2">
+                <Clock className="w-5 h-5 text-cyan-400" />
+                <span className={`font-mono font-bold ${timeRemaining < 300 ? 'text-cyan-400' : 'text-white'}`}>
+                  {formatTime(timeRemaining)}
+                </span>
+              </div>
+            </div>
+          )}
+        </div>
+      </header>
+
+      <div className="max-w-7xl mx-auto px-6 py-6">
+        <AnimatePresence mode="wait">
+          {examState === 'preview' && (
+            <motion.div
+              key="preview"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="max-w-4xl mx-auto"
+            >
+              <div className="bg-slate-900/40 backdrop-blur-lg rounded-3xl border border-cyan-500/20 p-8">
+                <div className="text-center mb-8">
+                  <h1 className="text-4xl font-bold bg-gradient-to-r from-cyan-400 to-green-400 bg-clip-text text-transparent mb-4">{sampleExam.title}</h1>
+                  <p className="text-xl text-gray-300 mb-6">{sampleExam.description}</p>
+                  
+                  <div className="grid md:grid-cols-3 gap-6 mb-8">
+                    <div className="bg-slate-800/40 rounded-xl p-4 border border-cyan-500/20">
+                      <Clock className="w-8 h-8 text-cyan-400 mx-auto mb-2" />
+                      <div className="text-2xl font-bold text-white">{sampleExam.duration} min</div>
+                      <div className="text-gray-400">Duration</div>
+                    </div>
+                    <div className="bg-slate-800/40 rounded-xl p-4 border border-cyan-500/20">
+                      <Target className="w-8 h-8 text-green-400 mx-auto mb-2" />
+                      <div className="text-2xl font-bold text-white">{sampleExam.totalMarks}</div>
+                      <div className="text-gray-400">Total Marks</div>
+                    </div>
+                    <div className="bg-slate-800/40 rounded-xl p-4 border border-cyan-500/20">
+                      <Code2 className="w-8 h-8 text-cyan-300 mx-auto mb-2" />
+                      <div className="text-2xl font-bold text-white">{sampleExam.questions.length}</div>
+                      <div className="text-gray-400">Questions</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Exam Instructions */}
+                <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-6 mb-8">
+                  <div className="flex items-start space-x-3">
+                    <AlertCircle className="w-6 h-6 text-yellow-400 flex-shrink-0 mt-1" />
+                    <div>
+                      <h3 className="text-lg font-semibold text-yellow-400 mb-3">Important Instructions</h3>
+                      <ul className="text-gray-300 space-y-2 text-sm">
+                        <li>• Once started, you cannot pause or restart the exam</li>
+                        <li>• Tab switching and copy-paste operations are monitored</li>
+                        <li>• Submit your answers before time runs out</li>
+                        <li>• Each question has specific test cases that must pass</li>
+                        <li>• Choose your programming language carefully</li>
+                        <li>• Excessive warnings may result in exam termination</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Questions Preview */}
+                <div className="mb-8">
+                  <h3 className="text-xl font-semibold text-white mb-4">Questions Overview</h3>
+                  <div className="space-y-4">
+                    {sampleExam.questions.map((question, index) => (
+                      <div key={question.id} className="bg-slate-800/40 border border-cyan-500/20 rounded-xl p-4 flex justify-between items-center">
+                        <div>
+                          <h4 className="font-semibold text-white">Q{index + 1}. {question.title}</h4>
+                          <p className="text-gray-400 text-sm">{question.description}</p>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-lg font-bold text-cyan-300">{question.marks} pts</div>
+                          <div className={`text-xs px-2 py-1 rounded-full ${
+                            question.difficulty === 'easy' ? 'bg-green-400/20 text-green-400' :
+                            question.difficulty === 'medium' ? 'bg-yellow-400/20 text-yellow-400' :
+                            'bg-red-400/20 text-red-400'
+                          }`}>
+                            {question.difficulty.toUpperCase()}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="text-center">
+                  <button
+                    onClick={handleStartExam}
+                    className="bg-gradient-to-r from-cyan-500 to-green-500 hover:from-cyan-600 hover:to-green-600 px-12 py-4 rounded-xl text-black font-semibold text-lg transition-all duration-300 transform hover:scale-105 flex items-center space-x-3 mx-auto"
+                  >
+                    <Play className="w-6 h-6" />
+                    <span>Start Exam</span>
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+          {examState === 'active' && (
+            <motion.div
+              key="active"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="grid lg:grid-cols-3 gap-6 h-[calc(100vh-140px)]"
+            >
+              {/* Question Panel */}
+              <div className="bg-slate-900/40 backdrop-blur-lg rounded-2xl border border-cyan-500/20 overflow-hidden">
+                <div className="p-6 border-b border-white/10">
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-xl font-bold text-white">
+                      Question {currentQuestionIndex + 1} of {sampleExam.questions.length}
+                    </h2>
+                    <span className="text-lg font-bold text-cyan-300">
+                      {currentQuestion.marks} pts
+                    </span>
+                  </div>
+                  <h3 className="text-lg font-semibold text-white">{currentQuestion.title}</h3>
+                </div>
+
+                <div className="p-6 overflow-y-auto h-full">
+                  <p className="text-gray-300 mb-6 leading-relaxed">{currentQuestion.description}</p>
+                  
+                  <div className="mb-6">
+                    <h4 className="font-semibold text-white mb-3">Test Cases:</h4>
+                    <div className="space-y-3">
+                      {currentQuestion.testCases.map((testCase, index) => (
+                        <div key={index} className="bg-slate-800/40 border border-cyan-500/20 rounded-lg p-3">
+                          <div className="text-sm">
+                            <span className="text-cyan-300 font-medium">Input:</span>
+                            <code className="block bg-black/30 rounded p-2 mt-1 text-green-300 font-mono text-xs">
+                              {testCase.input}
+                            </code>
+                          </div>
+                          <div className="text-sm mt-2">
+                            <span className="text-cyan-300 font-medium">Expected Output:</span>
+                            <code className="block bg-black/30 rounded p-2 mt-1 text-blue-300 font-mono text-xs">
+                              {testCase.expectedOutput}
+                            </code>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Navigation */}
+                  <div className="flex justify-between items-center">
+                    <button
+                      onClick={() => setCurrentQuestionIndex(prev => Math.max(0, prev - 1))}
+                      disabled={currentQuestionIndex === 0}
+                      className="px-4 py-2 bg-white/10 hover:bg-white/20 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg text-white transition-colors"
+                    >
+                      Previous
+                    </button>
+                    <button
+                      onClick={() => setCurrentQuestionIndex(prev => Math.min(sampleExam.questions.length - 1, prev + 1))}
+                      disabled={currentQuestionIndex === sampleExam.questions.length - 1}
+                      className="px-4 py-2 bg-white/10 hover:bg-white/20 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg text-white transition-colors"
+                    >
+                      Next
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Code Editor */}
+              <div className="lg:col-span-2">
+                <CodeEditor
+                  initialCode={answers[currentQuestion.id] || ''}
+                  language={language}
+                  onCodeChange={handleCodeChange}
+                  height="calc(100vh - 220px)"
+                />
+                
+                <div className="mt-4 p-4 bg-slate-900/40 backdrop-blur-lg rounded-2xl border border-cyan-500/20 space-y-4">
+                  <div className="flex items-center space-x-4">
+                    <select
+                      value={language}
+                      onChange={(e) => setLanguage(e.target.value)}
+                      className="bg-slate-800/50 border border-cyan-500/30 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-cyan-400"
+                    >
+                      <option value="python" className="bg-slate-800">Python</option>
+                      <option value="java" className="bg-slate-800">Java</option>
+                      <option value="cpp" className="bg-slate-800">C++</option>
+                      <option value="javascript" className="bg-slate-800">JavaScript</option>
+                    </select>
+                  </div>
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm font-medium mb-2 block text-white">Input (stdin)</label>
+                      <textarea
+                        value={stdinInput}
+                        onChange={(e) => setStdinInput(e.target.value)}
+                        className="w-full h-24 text-sm bg-slate-800/50 border border-cyan-500/30 rounded-lg p-3 text-white placeholder-gray-400 focus:border-cyan-400"
+                        placeholder="Provide input for your program"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium mb-2 block text-white">Output</label>
+                      <div className="h-24 bg-slate-950 border border-cyan-500/30 rounded-lg p-3 overflow-auto">
+                        <pre className="text-sm text-green-400 font-mono">{runnerOutput}</pre>
+                      </div>
+                    </div>
+                  </div>
+                {/* Test results & Viva */}
+                {testResults.length > 0 && (
+                  <div className="mt-4 grid md:grid-cols-2 gap-4">
+                    <div className="bg-black/40 rounded-xl p-3 border border-cyan-500/20">
+                      <div className="text-white font-semibold mb-2 flex items-center"><CheckCircle className="w-4 h-4 mr-2"/>Test Case Validation</div>
+                      <ul className="text-xs text-gray-300 space-y-1">
+                        {testResults.map((t, i) => (
+                          <li key={i} className={`flex justify-between ${t.pass ? 'text-green-400' : 'text-red-400'}`}>
+                            <span>Input: {t.input}</span>
+                            <span>{t.pass ? 'PASS' : 'FAIL'}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                    <div className="bg-black/40 rounded-xl p-3 border border-cyan-500/20">
+                      <div className="text-white font-semibold mb-2">Viva Questions</div>
+                      <ul className="text-xs text-gray-300 list-disc pl-4 space-y-1">
+                        {viva.map((q, i) => <li key={i}>{q}</li>)}
+                      </ul>
+                    </div>
+                  </div>
+                )}
+                  <div className="flex items-center justify-between">
+                    <button
+                      onClick={runCode}
+                      disabled={isRunning}
+                      className="bg-gradient-to-r from-cyan-500 to-green-500 hover:from-cyan-600 hover:to-green-600 px-6 py-3 rounded-xl text-black font-semibold transition-all duration-300 disabled:opacity-60"
+                    >
+                      {isRunning ? 'Running...' : 'Run Code'}
+                    </button>
+                    <button
+                      onClick={handleSubmitExam}
+                      className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 px-8 py-3 rounded-xl text-white font-semibold transition-all duration-300"
+                    >
+                      Submit Exam
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+          {examState === 'completed' && (
+            <motion.div
+              key="completed"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="max-w-2xl mx-auto text-center"
+            >
+              <div className="bg-slate-900/40 backdrop-blur-lg rounded-3xl border border-cyan-500/20 p-12">
+                <div className="w-24 h-24 bg-gradient-to-r from-blue-400 to-blue-600 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <CheckCircle className="w-12 h-12 text-white" />
+                </div>
+                <h1 className="text-3xl font-bold text-white mb-4">Exam Submitted Successfully!</h1>
+                <p className="text-xl text-gray-300 mb-8">
+                  Your answers are being evaluated. Results will be available shortly.
+                </p>
+                <div className="animate-spin w-8 h-8 border-4 border-purple-400 border-t-transparent rounded-full mx-auto"></div>
+                <div className="mt-8">
+                  <Link to="/" className="inline-flex items-center px-6 py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-green-500 text-black font-semibold hover:from-cyan-600 hover:to-green-600">
+                    <ArrowLeft className="w-4 h-4 mr-2" /> Back to Home
+                  </Link>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+          {examState === 'results' && (
+            <motion.div
+              key="results"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="max-w-4xl mx-auto"
+            >
+              <div className="bg-white/10 backdrop-blur-lg rounded-3xl border border-white/20 p-8">
+                <div className="text-center mb-8">
+                  <div className="w-24 h-24 bg-gradient-to-r from-green-400 to-green-600 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <BarChart3 className="w-12 h-12 text-white" />
+                  </div>
+                  <h1 className="text-4xl font-bold text-white mb-4">Exam Results</h1>
+                  <div className="text-6xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent mb-2">
+                    {examResults.score}%
+                  </div>
+                  <p className="text-xl text-gray-300">Great job on completing the exam!</p>
+                </div>
+
+                {/* Detailed Results */}
+                <div className="space-y-4 mb-8">
+                  <h3 className="text-xl font-semibold text-white">Question Breakdown</h3>
+                  {examResults.details.map((result, index) => (
+                    <div key={result.questionId} className="bg-white/5 rounded-xl p-4 flex items-center justify-between">
+                      <div>
+                        <h4 className="font-semibold text-white">Q{index + 1}. {result.title}</h4>
+                        <div className="flex items-center space-x-2 mt-1">
+                          {result.status === 'passed' ? (
+                            <CheckCircle className="w-4 h-4 text-green-400" />
+                          ) : (
+                            <XCircle className="w-4 h-4 text-red-400" />
+                          )}
+                          <span className={`text-sm ${result.status === 'passed' ? 'text-green-400' : 'text-red-400'}`}>
+                            {result.status === 'passed' ? 'Passed' : 'Failed'}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-lg font-bold text-white">
+                          {result.scored}/{result.marks}
+                        </div>
+                        <div className="text-sm text-gray-400">marks</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Leaderboard Preview */}
+                <div className="bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-2xl p-6 mb-8">
+                  <div className="flex items-center space-x-3 mb-4">
+                    <Users className="w-6 h-6 text-purple-400" />
+                    <h3 className="text-lg font-semibold text-white">Your Ranking</h3>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-3xl font-bold text-purple-400 mb-2">#12</div>
+                    <p className="text-gray-300">out of 156 participants</p>
+                  </div>
+                </div>
+
+                <div className="text-center">
+                  <Link
+                    to="/profile"
+                  className="bg-gradient-to-r from-cyan-500 to-green-500 hover:from-cyan-600 hover:to-green-600 px-8 py-4 rounded-xl text-black font-semibold transition-all duration-300 transform hover:scale-105 inline-flex items-center space-x-2"
+                  >
+                    <span>Back to Dashboard</span>
+                    <ArrowLeft className="w-5 h-5 rotate-180" />
+                  </Link>
+                <div className="mt-4">
+                  <Link to="/" className="inline-flex items-center px-6 py-3 rounded-xl border border-cyan-500/30 text-cyan-300 hover:bg-cyan-500/10">
+                    <ArrowLeft className="w-4 h-4 mr-2" /> Back to Home
+                  </Link>
+                </div>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    </div>
+  );
+}

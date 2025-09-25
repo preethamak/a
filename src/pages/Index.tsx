@@ -15,6 +15,7 @@ import {
   Star
 } from 'lucide-react';
 import Particles from '@/components/Particles';
+import { TerminalSquare } from 'lucide-react';
 
 const Index = () => {
   const navigate = useNavigate();
@@ -53,32 +54,7 @@ const Index = () => {
     <div className="min-h-screen">
       <Particles />
       
-      {/* Navigation */}
-      <nav className="p-6">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Code className="h-8 w-8 text-primary animate-pulse" />
-            <span className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-              CodeLab
-            </span>
-          </div>
-          
-          <div className="hidden md:flex items-center gap-6">
-            <Button variant="ghost" onClick={() => navigate('/about')}>
-              About
-            </Button>
-            <Button variant="ghost" onClick={() => navigate('/features')}>
-              Features
-            </Button>
-            <Button variant="ghost" onClick={() => navigate('/syllabus')}>
-              Syllabus
-            </Button>
-            <Button variant="ghost" onClick={() => navigate('/developers')}>
-              Developers
-            </Button>
-          </div>
-        </div>
-      </nav>
+      {/* Global Navbar is rendered by Layout */}
 
       {/* Hero Section */}
       <section className="py-20 px-6">
@@ -109,6 +85,10 @@ const Index = () => {
               <Play className="h-5 w-5 mr-2" />
               Enter CodeLab
               <ArrowRight className="h-5 w-5 ml-2" />
+            </Button>
+            <Button size="lg" variant="outline" onClick={() => navigate('/developers')} className="text-lg px-8 py-4 border-primary/20 hover:border-primary/40">
+              <TerminalSquare className="h-5 w-5 mr-2" />
+              Developer Terminal
             </Button>
           </div>
         </div>
@@ -202,38 +182,7 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="py-12 px-6">
-        <div className="max-w-6xl mx-auto text-center space-y-4">
-          <div className="flex justify-center items-center gap-2">
-            <Code className="h-6 w-6 text-primary" />
-            <span className="text-xl font-bold text-primary">CodeLab</span>
-          </div>
-          <p className="text-muted-foreground">
-            Empowering the next generation of programmers through innovative assessment technology.
-          </p>
-          <div className="flex justify-center gap-6 text-sm text-muted-foreground">
-            <Button variant="ghost" size="sm" onClick={() => navigate('/about')}>
-              About
-            </Button>
-            <Button variant="ghost" size="sm" onClick={() => navigate('/features')}>
-              Features
-            </Button>
-            <Button variant="ghost" size="sm" onClick={() => navigate('/syllabus')}>
-              Syllabus
-            </Button>
-            <Button variant="ghost" size="sm" onClick={() => navigate('/practice')}>
-              Practice
-            </Button>
-            <Button variant="ghost" size="sm" onClick={() => navigate('/developers')}>
-              Developers
-            </Button>
-            <Button variant="ghost" size="sm" onClick={() => navigate('/login')}>
-              Login
-            </Button>
-          </div>
-        </div>
-      </footer>
+      {/* Global Footer is rendered by Layout */}
     </div>
   );
 };

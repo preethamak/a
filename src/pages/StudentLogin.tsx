@@ -27,7 +27,9 @@ const StudentLogin = () => {
     
     localStorage.setItem('studentName', name);
     localStorage.setItem('studentRoll', rollNumber);
-    navigate('/exam');
+    const profile = { name, rollNumber, totalProblems: 0, streakCount: 0, achievements: [] };
+    localStorage.setItem('currentStudent', JSON.stringify(profile));
+    navigate('/profile');
   };
 
   const handleAdminLogin = () => {
