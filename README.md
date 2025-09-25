@@ -68,6 +68,7 @@ It provides **secure programming assessments**, **real-time monitoring**, and **
 
 ## 📂 Project Structure  
 
+```bash
 codelb/
 ├── backend/ # FastAPI backend
 │ ├── app/
@@ -93,7 +94,7 @@ codelb/
 ├── docker-compose.yml # Full stack deployment
 ├── Dockerfile.frontend # Frontend container
 └── README.md # Documentation
-
+```
 
 ---
 
@@ -132,3 +133,4 @@ docker-compose up --build -d
   Code runs in Docker (CPU/memory/time limited)
   Outputs validated against expected results
   Detailed feedback shown on student dashboard
+
