@@ -128,9 +128,15 @@ docker-compose up --build -d
 ```
 
 ⚡ Execution Flow
+
   Student submits code → stored in DB
+  
   AI generates test cases → validated & saved
+  
   Code runs in Docker (CPU/memory/time limited)
+  
   Outputs validated against expected results
+  
   Detailed feedback shown on student dashboard
+
 
