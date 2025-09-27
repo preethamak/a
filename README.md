@@ -127,7 +127,7 @@ OPENAI_API_KEY=your-openai-api-key
 docker-compose up --build -d
 ```
 
-⚡ Execution Flow
+⚡ Execution Flow:
 
   Student submits code → stored in DB
   
@@ -138,6 +138,7 @@ docker-compose up --build -d
   Outputs validated against expected results
   
   Detailed feedback shown on student dashboard
+
 
 
 
