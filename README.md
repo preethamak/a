@@ -14,7 +14,7 @@ https://cody123.vercel.app/
 ## 🌟 Overview  
 
 **CodeLab** is an advanced **web-based coding evaluation platform**.  
-It provides **secure programming assessments**, **real-time monitoring**, and **AI-powered test case generation** to make coding tests and learning more efficient.  
+It provides **secure programming assessments**, **real-time monitoring**, and **AI-powered test case generation** to make coding tests and learning more efficient.
 
 🔹 Multi-language support (C, C++, Python, Java, SQL)  
 🔹 Integrated **Monaco editor** for smooth coding experience  
@@ -138,6 +138,7 @@ docker-compose up --build -d
   Outputs validated against expected results
   
   Detailed feedback shown on student dashboard
+
 
 
 
